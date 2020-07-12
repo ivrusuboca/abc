@@ -26,12 +26,37 @@ AF
    .responseJSON(queue: DispatchQueue.global(qos: .utility)) // not in .main queue
 { res in
    
-   let json = try! JSON(data: res.data!)
-   let price = Decimal(string: json["price"].string!)!
-   let symbol = json["symbol"].string!
-   print("\(symbol) : \(price) ")
+   defer
+   {
+      group.leave() // whatever happens next, this will be called
+   }
    
-   group.leave()
+   switch res.result
+   {
+   case .success:
+      guard let data = res.data, let json = try? JSON(data: data) else
+      {
+         print("failure : invalid JSON format for response : \(res.value) ")
+         return
+      }
+      guard
+         let symbol = json["symbol"].string,
+         let p = json["price"].string,
+         let price = Decimal(string: p) else
+      {
+         if let msg = json["msg"].string, let code = json["code"].int
+         {
+            print("failure : code \(code) w/ message : \(msg) ")
+         }else
+         {
+            print("failure : \(json) ")
+         }
+         return
+      }
+      print("\(symbol) : \(p) ")
+   case .failure(let err):
+      print("failure : \(res.value) w/ error : \(err) ")
+   }
 }
 
 group.wait()
