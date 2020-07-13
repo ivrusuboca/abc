@@ -28,8 +28,7 @@ func getPrice(ofPair pair:String) throws -> (String, Decimal)
    var result:(String, Decimal)?
    var failure:Failure?
    
-   let group = DispatchGroup()
-   group.enter()
+   let semaphore = DispatchSemaphore(value: 0)
 
    AF
       .request("https://api.binance.com/api/v3/ticker/price?symbol=\(pair)")
@@ -40,7 +39,7 @@ func getPrice(ofPair pair:String) throws -> (String, Decimal)
       
       defer
       {
-         group.leave() // whatever happens next, this will be called
+         semaphore.signal() // whatever happens next, this will be called
       }
       
       switch res.result
@@ -70,7 +69,11 @@ func getPrice(ofPair pair:String) throws -> (String, Decimal)
          failure = Failure.withMessage(msg: "\(err)")
       }
    }
-   group.wait()
+   let ret = semaphore.wait(timeout: DispatchTime.distantFuture)
+   if ret != .success
+   {
+      failure = Failure.withMessage(msg: "Semaphore error : \(ret)")
+   }
 
    assert(result != nil || failure != nil)
    
