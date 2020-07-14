@@ -39,7 +39,7 @@ public func getPrice(ofPair pair:String) throws -> (String, Decimal)
       case .success:
          guard let data = res.data, let json = try? JSON(data: data) else
          {
-            failure = Failure.withMessage(msg: "invalid JSON format for response : \(res.value)")
+            failure = Failure.withMessage(msg: "invalid JSON format for response : \(String(describing: res.value))")
             return
          }
          guard
